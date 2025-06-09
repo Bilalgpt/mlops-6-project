@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: MLOPS-PROJECT-6
+Version: 0.1
+Author: Bilal
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: matplotlib
+Requires-Dist: seaborn
+Requires-Dist: flask
+Requires-Dist: joblib
+Requires-Dist: scipy
+Requires-Dist: requests
+Requires-Dist: scikit-learn
+Dynamic: author
+Dynamic: requires-dist

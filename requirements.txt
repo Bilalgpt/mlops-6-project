@@ -1,0 +1,9 @@
+pandas
+numpy
+matplotlib
+seaborn
+flask
+joblib
+scipy
+requests
+scikit-learn
