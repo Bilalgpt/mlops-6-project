@@ -1,48 +1,62 @@
 version: 2.1
-orbs:
-  python: circleci/python@2
+
+executors:
+  docker-executor:
+    docker:
+      - image: google/cloud-sdk:latest
+    working_directory: ~/repo
+
 jobs:
-  test-python:
-    docker:
-      - image: cimg/python:3.8-node
+  checkout_code:
+    executor: docker-executor
     steps:
       - checkout
-      - python/install-packages:
-          pkg-manager: pip-dist
-      - run:
-          name: Install pytest
-          command: pip install pytest
-      - run:
-          name: Run tests
-          command: pytest --junitxml=junit.xml || ((($? == 5)) && echo 'Did not find any tests to run.')
-      - store_test_results:
-          path: junit.xml
-  build-package:
-    docker:
-      - image: cimg/python:3.8-node
+
+  build_docker_image:
+    executor: docker-executor
     steps:
       - checkout
+      - setup_remote_docker
       - run:
-          name: Create the ~/artifacts directory if it doesn't exist
-          command: mkdir -p ~/artifacts
-      - python/dist
-      - store_artifacts:
-          path: dist
-          destination: ~/artifacts
-  deploy:
-    docker:
-      - image: cimg/base:stable
+          name: Authenticate with google cloud
+          command: |
+              echo "$GCLOUD_SERVICE_KEY" | base64 --decode > gcp-key.json
+              gcloud auth activate-service-account --key-file=gcp-key.json
+              gcloud auth configure-docker us-central1-docker.pkg.dev || gcloud auth configure-docker
+      - run:
+          name: Build and Push Image
+          command: |
+              docker build -t us-central1-docker.pkg.dev/$GOOGLE_PROJECT_ID/mlops-app/mlops-app:latest .
+              docker push us-central1-docker.pkg.dev/$GOOGLE_PROJECT_ID/mlops-app/mlops-app:latest
+
+  deploy_to_gke:
+    executor: docker-executor
     steps:
+      - checkout
+      - setup_remote_docker
       - run:
-          name: deploy
-          command: '#e.g. ./deploy.sh'
+          name: Authenticate with google cloud
+          command: |
+              echo "$GCLOUD_SERVICE_KEY" | base64 --decode > gcp-key.json
+              gcloud auth activate-service-account --key-file=gcp-key.json
+              gcloud auth configure-docker us-central1-docker.pkg.dev || gcloud auth configure-docker
+      - run:
+          name: Configure GKE
+          command: |
+              gcloud container clusters get-credentials $GKE_CLUSTER --region $GOOGLE_COMPUTE_REGION --project $GOOGLE_PROJECT_ID
+      - run:
+          name: Deploy to GKE
+          command: |
+              kubectl apply -f kubernetes-deployment.yaml
+
 workflows:
-  build-and-test:
+  version: 2
+  deploy_pipeline:
     jobs:
-      - test-python
-      - build-package:
+      - checkout_code
+      - build_docker_image:
           requires:
-            - test-python
-    # - deploy:
-    #     requires:
-    #       - build-package
+            - checkout_code
+      - deploy_to_gke:
+          requires:
+            - build_docker_image
