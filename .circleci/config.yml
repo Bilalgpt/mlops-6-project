@@ -23,7 +23,10 @@ jobs:
               echo "$GCLOUD_SERVICE_KEY" | base64 --decode > gcp-key.json
               gcloud auth activate-service-account --key-file=gcp-key.json
               gcloud auth configure-docker us-central1-docker.pkg.dev
+<<<<<<< HEAD
 
+=======
+>>>>>>> 13d77a982bf3ed1c31f60219a86fbea66028deff
       - run:
           name: Build and Push Image
           command: |
@@ -39,7 +42,10 @@ jobs:
           command: |
               echo "$GCLOUD_SERVICE_KEY" | base64 --decode > gcp-key.json
               gcloud auth activate-service-account --key-file=gcp-key.json
+<<<<<<< HEAD
       
+=======
+>>>>>>> 13d77a982bf3ed1c31f60219a86fbea66028deff
       - run:
           name: Configure GKE
           command: |
